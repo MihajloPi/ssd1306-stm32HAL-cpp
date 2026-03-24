@@ -1,76 +1,39 @@
-/**
- * This Library is written and optimized by Olivier Van den Eede(4ilo) in 2016
- * for Stm32 Uc and HAL-i2c lib's.
- *
- * To use this library with ssd1306 oled display you will need to customize the defines below.
- *
- * This library uses 2 extra files (fonts.c/h).
- * In this files are 3 different fonts you can use:
- *     - Font_7x10
- *     - Font_11x18
- *     - Font_16x26
- *
- */
-
-#ifndef _SSD1306_H
-#define _SSD1306_H
+#pragma once
 
 #include "stm32f4xx_hal.h"
 #include "fonts.h"
+#include <cstdint>
 
-// I2c address
-#ifndef SSD1306_I2C_ADDR
-#define SSD1306_I2C_ADDR        0x78
-#endif // SSD1306_I2C_ADDR
+class SSD1306 {
+public:
+    enum class Color : uint8_t {
+        Black = 0x00,
+        White = 0x01
+    };
 
-// SSD1306 width in pixels
-#ifndef SSD1306_WIDTH
-#define SSD1306_WIDTH           128
-#endif // SSD1306_WIDTH
+    static constexpr uint8_t  I2C_ADDR   = 0x78;
+    static constexpr uint16_t WIDTH      = 128;
+    static constexpr uint16_t HEIGHT     = 64;
 
-// SSD1306 LCD height in pixels
-#ifndef SSD1306_HEIGHT
-#define SSD1306_HEIGHT          64
-#endif // SSD1306_HEIGHT
+    explicit SSD1306(I2C_HandleTypeDef &hi2c);
 
-#ifndef SSD1306_COM_LR_REMAP
-#define SSD1306_COM_LR_REMAP    0
-#endif // SSD1306_COM_LR_REMAP
+    bool     Init();
+    void     UpdateScreen();
+    void     Fill(Color color);
+    void     DrawPixel(uint8_t x, uint8_t y, Color color);
+    char     WriteChar(char ch, FontDef font, Color color);
+    char     WriteString(const char *str, FontDef font, Color color);
+    void     SetCursor(uint8_t x, uint8_t y);
+    void     InvertColors();
 
-#ifndef SSD1306_COM_ALTERNATIVE_PIN_CONFIG
-#define SSD1306_COM_ALTERNATIVE_PIN_CONFIG    1
-#endif // SSD1306_COM_ALTERNATIVE_PIN_CONFIG
+private:
+    I2C_HandleTypeDef &_hi2c;
 
+    uint8_t  _buffer[WIDTH * HEIGHT / 8]{};
+    uint16_t _cursorX   = 0;
+    uint16_t _cursorY   = 0;
+    bool     _inverted  = false;
+    bool     _initialized = false;
 
-//
-//  Enumeration for screen colors
-//
-typedef enum {
-    Black = 0x00,   // Black color, no pixel
-    White = 0x01,   // Pixel is set. Color depends on LCD
-} SSD1306_COLOR;
-
-//
-//  Struct to store transformations
-//
-typedef struct {
-    uint16_t CurrentX;
-    uint16_t CurrentY;
-    uint8_t Inverted;
-    uint8_t Initialized;
-} SSD1306_t;
-
-//
-//  Function definitions
-//
-
-uint8_t ssd1306_Init(I2C_HandleTypeDef *hi2c);
-void ssd1306_UpdateScreen(I2C_HandleTypeDef *hi2c);
-void ssd1306_Fill(SSD1306_COLOR color);
-void ssd1306_DrawPixel(uint8_t x, uint8_t y, SSD1306_COLOR color);
-char ssd1306_WriteChar(char ch, FontDef Font, SSD1306_COLOR color);
-char ssd1306_WriteString(const char* str, FontDef Font, SSD1306_COLOR color);
-void ssd1306_SetCursor(uint8_t x, uint8_t y);
-void ssd1306_InvertColors(void);
-
-#endif  // _SSD1306_H
+    bool WriteCommand(uint8_t cmd);
+};
